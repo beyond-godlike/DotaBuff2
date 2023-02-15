@@ -41,4 +41,8 @@ class PlayersViewModel @Inject constructor(
     fun updatePlayer(player: AccInformation) = viewModelScope.launch(Dispatchers.IO) {
         repository.updatePlayer(player)
     }
+
+    fun deletePlayer(player: AccInformation) = viewModelScope.launch(Dispatchers.IO) {
+        repository.deletePlayer(player)
+    }
 }
