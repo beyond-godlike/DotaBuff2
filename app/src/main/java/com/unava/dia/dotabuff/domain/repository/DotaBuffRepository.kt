@@ -2,7 +2,6 @@ package com.unava.dia.dotabuff.domain.repository
 
 import com.unava.dia.dotabuff.domain.model.AccInformation
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 
 interface DotaBuffRepository {
     fun getPlayers(): Flow<List<AccInformation>>

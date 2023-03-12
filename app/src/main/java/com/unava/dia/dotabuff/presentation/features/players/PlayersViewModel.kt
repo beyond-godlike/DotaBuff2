@@ -1,15 +1,16 @@
 package com.unava.dia.dotabuff.presentation.features.players
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unava.dia.dotabuff.domain.model.AccInformation
 import com.unava.dia.dotabuff.domain.repository.DotaBuffRepository
-import com.unava.dia.dotabuff.presentation.features.State
+import com.unava.dia.dotabuff.presentation.core.BaseViewModel
+import com.unava.dia.dotabuff.presentation.core.ViewAction
+import com.unava.dia.dotabuff.presentation.core.ViewState
+import com.unava.dia.dotabuff.presentation.features.addPlayer.AddPlayerViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -17,32 +18,55 @@ import javax.inject.Inject
 @HiltViewModel
 class PlayersViewModel @Inject constructor(
     private val repository: DotaBuffRepository,
-) : ViewModel() {
-    val state = MutableStateFlow<State>(State.START)
+) : BaseViewModel<PlayersViewModel.State, PlayersViewModel.Action>(
+    initialState = State.START
+) {
     var isLoading = mutableStateOf(true)
 
     init {
-        getPlayerList()
+        dispatch(Action.GetPlayersList)
     }
 
-    fun getPlayerList() = viewModelScope.launch(Dispatchers.IO) {
-        //state.value = State.LOADING
-        repository.getPlayers().distinctUntilChanged().collect {
-            if (it.isNullOrEmpty()) {
-                state.value = State.FAILURE("list is empty")
-            } else {
-                state.value = State.SUCCESSLIST(it)
+    override fun dispatch(action: Action) {
+        when(action) {
+            is Action.UpdatePlayer -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    repository.updatePlayer(action.player)
+                }
             }
-            delay(100)
-            isLoading.value = false
+            is Action.DeletePlayer -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    repository.deletePlayer(action.player)
+                }
+            }
+            is Action.GetPlayersList -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    //updateState(State.LOADING)
+                    repository.getPlayers().distinctUntilChanged().collect {
+                        if (it.isNullOrEmpty()) {
+                            updateState(State.FAILURE("list is empty"))
+                        } else {
+                            updateState(State.SUCCESS(it))
+                        }
+                        delay(100)
+                        isLoading.value = false
+                    }
+                }
+            }
         }
     }
 
-    fun updatePlayer(player: AccInformation) = viewModelScope.launch(Dispatchers.IO) {
-        repository.updatePlayer(player)
+
+    sealed class State : ViewState {
+        object START : State()
+        object LOADING : State()
+        data class SUCCESS(val players: List<AccInformation>) : State()
+        data class FAILURE(val message: String) : State()
     }
 
-    fun deletePlayer(player: AccInformation) = viewModelScope.launch(Dispatchers.IO) {
-        repository.deletePlayer(player)
+    sealed class Action : ViewAction {
+        data class UpdatePlayer(val player: AccInformation) : Action()
+        data class DeletePlayer(val player: AccInformation) : Action()
+        object GetPlayersList : Action()
     }
 }

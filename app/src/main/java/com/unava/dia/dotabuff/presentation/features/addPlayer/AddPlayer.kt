@@ -7,8 +7,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,7 +18,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.unava.dia.dotabuff.domain.model.AccInformation
-import com.unava.dia.dotabuff.presentation.features.State
 import com.unava.dia.dotabuff.presentation.features.destinations.PlayersDestination
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.Small
@@ -34,32 +31,30 @@ fun AddPlayer(
     navigator: DestinationsNavigator,
 ) {
     val viewModel: AddPlayerViewModel = hiltViewModel()
-    val state by viewModel.state.collectAsState()
 
-    when (state) {
-        State.START -> {
+    when (val state = viewModel.state.value) {
+        AddPlayerViewModel.State.START -> {
             if (id != -1) {
-                viewModel.loadPlayer(id)
+                viewModel.dispatch(AddPlayerViewModel.Action.LoadPlayer(id))
             } else {
                 PlayerProfile(id, null, navigator = navigator, viewModel = viewModel)
             }
         }
-        State.LOADING -> {
+        AddPlayerViewModel.State.LOADING -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 CircularProgressIndicator()
             }
         }
-        is State.FAILURE -> {
+        is AddPlayerViewModel.State.FAILURE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                val message = (state as State.FAILURE).message
+                val message = state.message
                 Text(text = message, fontSize = 16.sp)
             }
         }
-        is State.SUCCESS -> {
-            val player = (state as State.SUCCESS).player
+        is AddPlayerViewModel.State.SUCCESS -> {
+            val player = state.player
             PlayerProfile(id, player, navigator = navigator, viewModel = viewModel)
         }
-        else -> {}
     }
 
 }
@@ -98,7 +93,7 @@ fun PlayerProfile(
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        viewModel.fetchPlayer()
+                        viewModel.dispatch(AddPlayerViewModel.Action.FetchPlayer)
                     }
                 )
             )
@@ -108,7 +103,7 @@ fun PlayerProfile(
                     .padding(Small)
                     .wrapContentHeight(align = Alignment.CenterVertically)
                     .fillMaxWidth(),
-                onClick = { viewModel.fetchPlayer() }
+                onClick = { viewModel.dispatch(AddPlayerViewModel.Action.FetchPlayer) }
             ) {
                 Text("Search player",
                     modifier = Modifier.padding(Small),
@@ -119,7 +114,7 @@ fun PlayerProfile(
                     .padding(Small)
                     .fillMaxWidth(),
                 onClick = {
-                    player?.let { viewModel.addPlayer(it) }
+                    player?.let { viewModel.dispatch(AddPlayerViewModel.Action.AddPlayer(it)) }
                     navigator.navigate(PlayersDestination())
                 }
             ) {
@@ -132,7 +127,7 @@ fun PlayerProfile(
                     .padding(Small)
                     .fillMaxWidth(),
                 onClick = {
-                    viewModel.deletePlayer(id)
+                    viewModel.dispatch(AddPlayerViewModel.Action.DeletePlayer(id))
                     navigator.navigate(PlayersDestination())
                 }
             ) {
