@@ -4,6 +4,7 @@ package com.unava.dia.dotabuff.presentation.features.players
 
 import android.content.res.Configuration
 import android.widget.Toast
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,10 +22,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,7 +38,6 @@ import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.NameWidth
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.Padding
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.ShimmerWidth
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.TextWidth
-import com.unava.dia.dotabuff.presentation.ui.theme.DotaBuffTheme
 
 @Destination(start = true)
 @Composable
@@ -78,6 +78,7 @@ fun PlayersListLandscape(navigator: DestinationsNavigator, orientation: Int) {
 fun PlayersList(navigator: DestinationsNavigator, orientation: Int) {
     Column(Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth()) {
+            // todo put in str res
             TextItem("Avatar")
             TextName("Name")
             TextItem("Estim")
@@ -126,6 +127,8 @@ fun FillList(navigator: DestinationsNavigator, orientation: Int) {
     PlayersViewModel.Action.GetPlayersList
 }
 
+
+// https://medium.com/mobile-app-development-publication/lessons-learned-after-3-days-debugging-jetpack-compose-swipetodismiss-e058d71f7374
 @Composable
 fun List(
     players: List<AccInformation>,
@@ -137,56 +140,60 @@ fun List(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(players.size) {
-            val currentPlayer by rememberUpdatedState(players[it])
+        items(
+            items = players,
+            key = { player -> player.id!! }, // Return a stable + unique key for the item
+            itemContent = { player ->
+                val currentPlayer by rememberUpdatedState(player)
 
-            val dismissState = rememberDismissState(
-                confirmStateChange = { it ->
-                    if (it == DismissValue.DismissedToStart) {
-                        viewModel.dispatch(PlayersViewModel.Action.DeletePlayer(currentPlayer))
-                    }
-                    true
-                }
-            )
-
-            SwipeToDismiss(
-                state = dismissState,
-                background = {
-                    val color = when (dismissState.dismissDirection) {
-                        DismissDirection.StartToEnd -> Color.Transparent
-                        DismissDirection.EndToStart -> Color.Red
-                        null -> Color.Transparent
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(color)
-                            .padding(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        )
-                    }
-
-                },
-                dismissContent = {
-                    when (orientation) {
-                        Configuration.ORIENTATION_LANDSCAPE -> {
-                            RowContent(viewModel, players[it], navigator)
+                val dismissState = rememberDismissState(
+                    confirmStateChange = {
+                        if (it == DismissValue.DismissedToStart) {
+                            viewModel.dispatch(PlayersViewModel.Action.DeletePlayer(currentPlayer))
                         }
-                        else -> {
-                            RowContentLandscape(viewModel, players[it], navigator)
-                        }
+                        true
                     }
-                },
-                directions = setOf(DismissDirection.EndToStart)
-            )
-            Divider()
-        }
+                )
+
+                SwipeToDismiss(
+                    state = dismissState,
+                    background = {
+                        val color = when (dismissState.dismissDirection) {
+                            DismissDirection.StartToEnd -> Color.Transparent
+                            DismissDirection.EndToStart -> Color.Red
+                            null -> Color.Transparent
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color)
+                                .padding(8.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = Color.White,
+                            )
+                        }
+
+                    },
+                    dismissContent = {
+                        when (orientation) {
+                            Configuration.ORIENTATION_LANDSCAPE -> {
+                                RowContent(viewModel, player, navigator)
+                            }
+                            else -> {
+                                RowContentLandscape(viewModel, player, navigator)
+                            }
+                        }
+                    },
+                    directions = setOf(DismissDirection.EndToStart)
+                )
+                Divider()
+            }
+        )
     }
 }
 
@@ -337,12 +344,4 @@ fun RowContent(
             .fillMaxWidth()
             .padding(Padding)
     )
-}
-
-@Preview
-@Composable
-fun PreviewPlayers() {
-    DotaBuffTheme {
-        //PlayersList()
-    }
 }
