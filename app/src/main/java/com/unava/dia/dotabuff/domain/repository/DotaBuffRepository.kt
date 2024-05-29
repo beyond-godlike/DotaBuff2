@@ -18,6 +18,6 @@ interface DotaBuffRepository {
 
     suspend fun deletePlayer(id: Int)
 
-    suspend fun isInDatabase(id: Int) : Boolean
+    suspend fun isInDatabase(steamid: String) : Boolean
 
 }

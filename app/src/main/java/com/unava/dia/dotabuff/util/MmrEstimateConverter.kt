@@ -7,7 +7,7 @@ import com.unava.dia.dotabuff.domain.model.MmrEstimate
 
 object MmrEstimateConverter {
     @TypeConverter
-    fun toObject(value: String) : MmrEstimate {
+    fun toObject(value: String) : MmrEstimate? {
         val listType = object : TypeToken<MmrEstimate>() {}.type
         return Gson().fromJson(value, listType)
     }

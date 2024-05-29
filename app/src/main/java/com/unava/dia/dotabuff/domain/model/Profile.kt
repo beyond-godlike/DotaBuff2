@@ -1,6 +1,7 @@
 package com.unava.dia.dotabuff.domain.model
 
 import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 
@@ -45,4 +46,7 @@ data class Profile(
     @SerializedName("is_contributor")
     var is_contributor: Boolean? = false
 
-) : Serializable
+) : Serializable {
+    @PrimaryKey(autoGenerate = true)
+    var id: Int? = null
+}

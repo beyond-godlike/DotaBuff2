@@ -32,6 +32,6 @@ interface PlayerDao {
     @Query("SELECT COUNT(*) FROM AccInformation")
     fun countAllPlayers() : Int
 
-    @Query("SELECT EXISTS (SELECT 1 FROM AccInformation WHERE id = :id)")
-    fun isInDatabase(id: Int) : Boolean
+    @Query("SELECT EXISTS (SELECT 1 FROM Profile WHERE steamid = :steamid)")
+    fun isInDatabase(steamid: String) : Boolean
 }

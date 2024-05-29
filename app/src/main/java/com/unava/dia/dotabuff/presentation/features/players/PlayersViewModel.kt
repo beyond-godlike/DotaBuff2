@@ -23,10 +23,6 @@ class PlayersViewModel @Inject constructor(
 ) {
     var isLoading = mutableStateOf(true)
 
-    init {
-        dispatch(Action.GetPlayersList)
-    }
-
     override fun dispatch(action: Action) {
         when(action) {
             is Action.UpdatePlayer -> {

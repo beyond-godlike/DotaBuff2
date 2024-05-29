@@ -2,141 +2,152 @@
 
 package com.unava.dia.dotabuff.presentation.features.players
 
-import android.content.res.Configuration
 import android.widget.Toast
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissValue
+import androidx.compose.material.Divider
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.rememberDismissState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.unava.dia.dotabuff.domain.model.AccInformation
-import com.unava.dia.dotabuff.presentation.features.destinations.AddPlayerDestination
+import com.unava.dia.dotabuff.presentation.ScreenAddPlayer
+import com.unava.dia.dotabuff.presentation.ScreenPlayersActivity
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.NameWidth
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.Padding
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.ShimmerWidth
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.TextWidth
 
-@Destination(start = true)
 @Composable
 fun Players(
-    navigator: DestinationsNavigator,
+    navController: NavHostController
 ) {
-    val configuration = LocalConfiguration.current
+    val viewModel: PlayersViewModel = hiltViewModel()
 
-    when (configuration.orientation) {
-        Configuration.ORIENTATION_LANDSCAPE -> {
-            PlayersList(navigator, configuration.orientation)
+    PlayersList(
+        viewModel,
+        onScreenAddPlayer = {
+            navController.navigate(ScreenAddPlayer(it))
+        },
+        onScreenPlayersActivity = {
+            navController.navigate(ScreenPlayersActivity(it))
+        },
+        onDeletePlayer = {
+            viewModel.dispatch(PlayersViewModel.Action.DeletePlayer(it))
         }
-        else -> {
-            PlayersListLandscape(navigator, configuration.orientation)
-        }
-    }
+    )
 }
 
 @Composable
-fun PlayersListLandscape(navigator: DestinationsNavigator, orientation: Int) {
+fun PlayersList(
+    viewModel: PlayersViewModel,
+    onScreenAddPlayer: (Int) -> Unit,
+    onScreenPlayersActivity: (String) -> Unit,
+    onDeletePlayer: ((AccInformation) -> Unit)?
+) {
     Column(Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth()) {
             TextName("Avatar \nName")
-            TextItem("Estim \nRank")
-            TextItem("Solo \nParty")
-            IconButton(
-                modifier = Modifier.padding(start = Padding),
-                onClick = { navigator.navigate(AddPlayerDestination(-1)) }
-            ) {
-                Icon(Icons.Filled.Add, "add player")
-            }
-        }
-        FillList(navigator, orientation)
-    }
-}
-
-@Composable
-fun PlayersList(navigator: DestinationsNavigator, orientation: Int) {
-    Column(Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // todo put in str res
-            TextItem("Avatar")
-            TextName("Name")
             TextItem("Estim")
-            TextItem("Solo")
-            TextItem("Party")
             TextItem("Rank")
-
             IconButton(
                 modifier = Modifier.padding(start = Padding),
-                onClick = { navigator.navigate(AddPlayerDestination(-1)) }
+                onClick = { onScreenAddPlayer(-1) }
             ) {
                 Icon(Icons.Filled.Add, "add player")
             }
         }
-        //Spacer(modifier = Modifier.size(Dimens.Small))
-
-        FillList(navigator, orientation)
-
+        FillList(viewModel, onScreenAddPlayer, onScreenPlayersActivity, onDeletePlayer)
     }
 }
 
 @Composable
-fun FillList(navigator: DestinationsNavigator, orientation: Int) {
-    val viewModel: PlayersViewModel = hiltViewModel()
+fun FillList(
+    viewModel: PlayersViewModel,
+    onScreenAddPlayer: (Int) -> Unit,
+    onScreenPlayersActivity: (String) -> Unit,
+    onDeletePlayer: ((AccInformation) -> Unit)?
+) {
 
     when (val state = viewModel.state.value) {
         PlayersViewModel.State.START -> {
             Text("start")
+            viewModel.dispatch(PlayersViewModel.Action.GetPlayersList)
         }
+
         PlayersViewModel.State.LOADING -> {
             CircularProgressIndicator()
         }
+
         is PlayersViewModel.State.FAILURE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 val message = (state).message
                 Text(text = message, fontSize = 16.sp)
             }
         }
+
         is PlayersViewModel.State.SUCCESS -> {
             val players = state.players
             if (players.isEmpty()) Text("list is empty")
             else
-                List(players, navigator, viewModel, orientation)
+                List(
+                    players,
+                    viewModel.isLoading.value,
+                    onDeletePlayer = { currentPlayer ->
+                        onDeletePlayer?.invoke(currentPlayer)
+                    },
+                    onScreenAddPlayer,
+                    onScreenPlayersActivity
+                )
         }
     }
-    PlayersViewModel.Action.GetPlayersList
 }
 
-
-// https://medium.com/mobile-app-development-publication/lessons-learned-after-3-days-debugging-jetpack-compose-swipetodismiss-e058d71f7374
 @Composable
 fun List(
     players: List<AccInformation>,
-    navigator: DestinationsNavigator,
-    viewModel: PlayersViewModel,
-    orientation: Int,
+    isLoading: Boolean,
+    onDeletePlayer: ((AccInformation) -> Unit)? = null,
+    onScreenAddPlayer: (Int) -> Unit,
+    onScreenPlayersActivity: (String) -> Unit
 ) {
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -149,7 +160,7 @@ fun List(
                 val dismissState = rememberDismissState(
                     confirmStateChange = {
                         if (it == DismissValue.DismissedToStart) {
-                            viewModel.dispatch(PlayersViewModel.Action.DeletePlayer(currentPlayer))
+                            onDeletePlayer?.invoke(currentPlayer)
                         }
                         true
                     }
@@ -180,14 +191,13 @@ fun List(
 
                     },
                     dismissContent = {
-                        when (orientation) {
-                            Configuration.ORIENTATION_LANDSCAPE -> {
-                                RowContent(viewModel, player, navigator)
-                            }
-                            else -> {
-                                RowContentLandscape(viewModel, player, navigator)
-                            }
-                        }
+                        RowContent(
+                            modifier = Modifier.fillMaxWidth(),
+                            isLoading,
+                            player,
+                            onScreenAddPlayer,
+                            onScreenPlayersActivity
+                        )
                     },
                     directions = setOf(DismissDirection.EndToStart)
                 )
@@ -221,18 +231,20 @@ fun TextName(text: String) {
 }
 
 @Composable
-fun RowContentLandscape(
-    viewModel: PlayersViewModel,
+fun RowContent(
+    modifier: Modifier,
+    isLoading: Boolean,
     player: AccInformation,
-    navigator: DestinationsNavigator,
+    onScreenAddPlayer: (Int) -> Unit,
+    onScreenPlayersActivity: (String) -> Unit
 ) {
     val ctx = LocalContext.current
 
     ShimmerListItem(
-        isLoading = viewModel.isLoading.value,
+        isLoading,
         contentAfterLoading = {
             Row(
-                modifier = Modifier
+                modifier = modifier.fillMaxWidth()
                     .clickable(
                         enabled = true,
                         onClick = {
@@ -246,97 +258,45 @@ fun RowContentLandscape(
                                 .show()
                         }
                     )
-                    .fillMaxWidth()
-                    .padding(Padding)
+                    .padding(0.dp, Padding, Padding, Padding)
 
             ) {
                 Column {
-                    TextName(player.profile?.personaname ?: "")
                     Image(
                         painter = rememberAsyncImagePainter(player.profile?.avatarmedium),
                         contentDescription = null,
                         modifier = Modifier
+                            .padding(Padding, 0.dp)
                             .size(ShimmerWidth)
                             .clip(CircleShape)
                     )
+                    TextName(player.profile?.personaname ?: "")
                 }
-                Column {
-                    TextItem(player.mmr_estimate?.estimate ?: "")
-                    TextItem(player.leaderboard_rank ?: "")
-                }
-                Column {
-                    TextItem(player.solo_competitive_rank ?: "")
-                    TextItem(player.competitive_rank ?: "")
-                }
-
-                IconButton(modifier = Modifier
-                    .padding(start = Padding)
-                    .align(Alignment.CenterVertically),
-                    onClick = {
-                        navigator.navigate(AddPlayerDestination(player.id!!))
-                    }
-                ) {
-                    Icon(Icons.Filled.Edit, "add player")
-                }
-            }
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(Padding)
-    )
-}
-
-
-@Composable
-fun RowContent(
-    viewModel: PlayersViewModel,
-    player: AccInformation,
-    navigator: DestinationsNavigator,
-) {
-    val ctx = LocalContext.current
-
-    ShimmerListItem(
-        isLoading = viewModel.isLoading.value,
-        contentAfterLoading = {
-            Row(
-                modifier = Modifier
-                    .clickable(
-                        enabled = true,
-                        onClick = {
-                            PlayersViewModel.Action.UpdatePlayer(player)
-                            Toast
-                                .makeText(
-                                    ctx,
-                                    player.profile?.personaname,
-                                    Toast.LENGTH_SHORT
-                                )
-                                .show()
-                        }
-                    )
-                    .fillMaxWidth()
-                    .padding(Padding)
-
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(player.profile?.avatarmedium),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(ShimmerWidth)
-                        .clip(CircleShape)
-                )
-
-                TextName(player.profile?.personaname ?: "")
                 TextItem(player.mmr_estimate?.estimate ?: "")
-                TextItem(player.solo_competitive_rank ?: "")
-                TextItem(player.competitive_rank ?: "")
                 TextItem(player.leaderboard_rank ?: "")
 
-                IconButton(modifier = Modifier.padding(start = Padding),
-                    onClick = {
-                        navigator.navigate(AddPlayerDestination(player.id!!))
+                Column {
+                    IconButton(modifier = Modifier
+                        .padding(start = Padding),
+                        onClick = {
+                            var steamid = "-1"
+                            if (player.profile?.steamid != null) {
+                                steamid = player.profile?.steamid!!
+                            }
+                            onScreenPlayersActivity(steamid)
+                        }) {
+                        Icon(Icons.Filled.AccountCircle, "activity")
                     }
-                ) {
-                    Icon(Icons.Filled.Edit, "add player")
+
+                    IconButton(modifier = Modifier
+                        .padding(start = Padding),
+                        onClick = {
+                            onScreenAddPlayer(player.id!!)
+                        }
+                    ) {
+                        Icon(Icons.Filled.Edit, "add player")
+                    }
+
                 }
             }
         },

@@ -33,8 +33,8 @@ class DotaBuffRepositoryImpl(private val dao: PlayerDao) : DotaBuffRepository {
         dao.deletePlayer(getPlayer(id).first())
     }
 
-    override suspend fun isInDatabase(playerId: Int) : Boolean {
-        return dao.isInDatabase(playerId)
+    override suspend fun isInDatabase(steamid: String) : Boolean {
+        return dao.isInDatabase(steamid)
     }
 
 }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.unava.dia.dotabuff.data.api.DotaBuffApi
 import com.unava.dia.dotabuff.domain.model.AccInformation
+import com.unava.dia.dotabuff.domain.model.Players
 import com.unava.dia.dotabuff.domain.repository.DotaBuffRepository
 import com.unava.dia.dotabuff.presentation.core.BaseViewModel
 import com.unava.dia.dotabuff.presentation.core.ViewAction
@@ -16,12 +17,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class AddPlayerViewModel @Inject constructor(
     private val repository: DotaBuffRepository,
-    private val api: DotaBuffApi,
-
+    @Named("openApi") private val api: DotaBuffApi,
     ) : BaseViewModel<AddPlayerViewModel.State, AddPlayerViewModel.Action>(
     initialState = State.START
 ) {
@@ -44,7 +45,10 @@ class AddPlayerViewModel @Inject constructor(
             is Action.AddPlayer -> {
                 viewModelScope.launch(Dispatchers.IO) {
                     if (action.player.id == null) {
-                        repository.insertPlayer(action.player)
+                        // if no player with such steamid
+                        if(!repository.isInDatabase(action.player.profile?.steamid!!))
+                            repository.insertPlayer(action.player)
+
                     } else {
                         repository.updatePlayer(action.player)
                     }

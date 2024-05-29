@@ -14,21 +14,18 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.unava.dia.dotabuff.domain.model.AccInformation
-import com.unava.dia.dotabuff.presentation.features.destinations.PlayersDestination
+import com.unava.dia.dotabuff.presentation.ScreenPlayers
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.Small
 
-@Destination
 @Composable
-// Parcelable, Serializable, Enum and classes annotated with
-// @kotlinx.serialization.Serializable (as well as Arrays and ArrayLists of these) work out of the box!
 fun AddPlayer(
     id: Int,
-    navigator: DestinationsNavigator,
+    navController: NavHostController
 ) {
     val viewModel: AddPlayerViewModel = hiltViewModel()
 
@@ -37,7 +34,7 @@ fun AddPlayer(
             if (id != -1) {
                 viewModel.dispatch(AddPlayerViewModel.Action.LoadPlayer(id))
             } else {
-                PlayerProfile(id, null, navigator = navigator, viewModel = viewModel)
+                //PlayerProfile(id, null, navController, viewModel = viewModel)
             }
         }
         AddPlayerViewModel.State.LOADING -> {
@@ -53,7 +50,22 @@ fun AddPlayer(
         }
         is AddPlayerViewModel.State.SUCCESS -> {
             val player = state.player
-            PlayerProfile(id, player, navigator = navigator, viewModel = viewModel)
+            PlayerProfile(
+                id, player,
+                viewModel,
+                onFetchPlayer = {
+                    viewModel.dispatch(AddPlayerViewModel.Action.FetchPlayer)
+                },
+                onAddPlayer = {
+                    viewModel.dispatch(AddPlayerViewModel.Action.AddPlayer(it))
+                },
+                onDeletePlayer = {
+                    viewModel.dispatch(AddPlayerViewModel.Action.DeletePlayer(it))
+                },
+                onNavigate = {
+                    navController.navigate(it)
+                }
+            )
         }
     }
 
@@ -63,8 +75,11 @@ fun AddPlayer(
 fun PlayerProfile(
     id: Int,
     player: AccInformation?,
-    navigator: DestinationsNavigator,
     viewModel: AddPlayerViewModel,
+    onFetchPlayer: () -> Unit,
+    onAddPlayer: (AccInformation) -> Unit,
+    onDeletePlayer: (Int) -> Unit,
+    onNavigate: (ScreenPlayers) -> Unit,
 ) {
     //Text(text = id.toString(), fontSize = 16.sp)
     Row(
@@ -93,7 +108,7 @@ fun PlayerProfile(
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        viewModel.dispatch(AddPlayerViewModel.Action.FetchPlayer)
+                        onFetchPlayer.invoke()
                     }
                 )
             )
@@ -103,7 +118,7 @@ fun PlayerProfile(
                     .padding(Small)
                     .wrapContentHeight(align = Alignment.CenterVertically)
                     .fillMaxWidth(),
-                onClick = { viewModel.dispatch(AddPlayerViewModel.Action.FetchPlayer) }
+                onClick = { onFetchPlayer.invoke() }
             ) {
                 Text("Search player",
                     modifier = Modifier.padding(Small),
@@ -114,8 +129,8 @@ fun PlayerProfile(
                     .padding(Small)
                     .fillMaxWidth(),
                 onClick = {
-                    player?.let { viewModel.dispatch(AddPlayerViewModel.Action.AddPlayer(it)) }
-                    navigator.navigate(PlayersDestination())
+                    onAddPlayer.invoke(player!!)
+                    onNavigate.invoke(ScreenPlayers)
                 }
             ) {
                 Text("Submit",
@@ -127,8 +142,8 @@ fun PlayerProfile(
                     .padding(Small)
                     .fillMaxWidth(),
                 onClick = {
-                    viewModel.dispatch(AddPlayerViewModel.Action.DeletePlayer(id))
-                    navigator.navigate(PlayersDestination())
+                    onDeletePlayer.invoke(id)
+                    onNavigate.invoke(ScreenPlayers)
                 }
             ) {
                 Text("Delete player",
@@ -155,12 +170,12 @@ fun Player(player: AccInformation?) {
             .clip(CircleShape)
     )
     Text(
-        "Rank: " + player?.leaderboard_rank ?: "",
+        ("Rank: " + player?.leaderboard_rank) ?: "",
         modifier = Modifier.padding(Dimens.Padding),
         style = MaterialTheme.typography.caption
     )
     Text(
-        "Estimated mmr: " + player?.mmr_estimate?.estimate ?: "",
+        ("Estimated mmr: " + player?.mmr_estimate?.estimate) ?: "",
         modifier = Modifier.padding(Dimens.Padding),
         style = MaterialTheme.typography.caption
     )
