@@ -67,7 +67,6 @@ class AddPlayerViewModel @Inject constructor(
                             playerId = it.profile?.account_id.toString()
                         }
                     } catch (e: Exception) {
-                        //State.FAILURE(response!!.code().toString())
                         updateState(State.FAILURE("player not found"))
                     }
                 }

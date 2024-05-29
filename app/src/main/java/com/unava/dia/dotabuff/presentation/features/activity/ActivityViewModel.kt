@@ -8,6 +8,9 @@ import com.unava.dia.dotabuff.presentation.core.ViewAction
 import com.unava.dia.dotabuff.presentation.core.ViewState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileInputStream
+import java.util.Properties
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -17,13 +20,16 @@ class ActivityViewModel @Inject constructor(
 ) : BaseViewModel<ActivityViewModel.State, ActivityViewModel.Action>(
     initialState = State.START
 ) {
+    val apiKey = Properties().apply {
+        load(FileInputStream(File("local.properties")))
+    }.getProperty("api_key")
 
     override fun dispatch(action: Action) {
         when (action) {
             is Action.FetchActivity -> {
                 viewModelScope.launch {
                     val response = steamApi.getPlayerState(
-                        "1DBA7492F4696BDF9B428CAF6F56FB84",
+                        apiKey,
                         action.steamId
                     )
 
