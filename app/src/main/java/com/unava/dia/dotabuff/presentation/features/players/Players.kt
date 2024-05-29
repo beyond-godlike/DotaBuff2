@@ -2,6 +2,7 @@
 
 package com.unava.dia.dotabuff.presentation.features.players
 
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +52,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.unava.dia.dotabuff.domain.model.AccInformation
 import com.unava.dia.dotabuff.presentation.ScreenAddPlayer
 import com.unava.dia.dotabuff.presentation.ScreenPlayersActivity
+import com.unava.dia.dotabuff.presentation.features.activity.LandscapePlayer
+import com.unava.dia.dotabuff.presentation.features.activity.PortraitPlayer
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.NameWidth
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.Padding
 import com.unava.dia.dotabuff.presentation.ui.theme.Dimens.ShimmerWidth
@@ -140,6 +144,7 @@ fun FillList(
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun List(
     players: List<AccInformation>,
@@ -210,10 +215,18 @@ fun List(
 
 @Composable
 fun TextItem(text: String) {
+    val configuration = LocalConfiguration.current
+    val modifier = when (configuration.orientation) {
+        Configuration.ORIENTATION_LANDSCAPE -> {
+            Modifier.width(TextWidth * 1.8f)
+        }
+        else -> {
+            Modifier.width(TextWidth)
+        }
+    }
     Text(
         text = text,
-        modifier = Modifier
-            .width(TextWidth)
+        modifier = modifier
             .padding(Padding),
         style = MaterialTheme.typography.caption
     )

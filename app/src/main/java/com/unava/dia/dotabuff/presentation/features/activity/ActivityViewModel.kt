@@ -24,7 +24,6 @@ class ActivityViewModel @Inject constructor(
                 viewModelScope.launch {
                     val response = steamApi.getPlayerState(
                         "1DBA7492F4696BDF9B428CAF6F56FB84",
-                        //"76561198178132453"
                         action.steamId
                     )
 

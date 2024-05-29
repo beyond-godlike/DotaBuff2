@@ -34,7 +34,21 @@ fun AddPlayer(
             if (id != -1) {
                 viewModel.dispatch(AddPlayerViewModel.Action.LoadPlayer(id))
             } else {
-                //PlayerProfile(id, null, navController, viewModel = viewModel)
+                PlayerProfile(id, null,
+                    viewModel,
+                    onFetchPlayer = {
+                        viewModel.dispatch(AddPlayerViewModel.Action.FetchPlayer)
+                    },
+                    onAddPlayer = {
+                        viewModel.dispatch(AddPlayerViewModel.Action.AddPlayer(it))
+                    },
+                    onDeletePlayer = {
+                        viewModel.dispatch(AddPlayerViewModel.Action.DeletePlayer(it))
+                    },
+                    onNavigate = {
+                        navController.navigate(it)
+                    }
+                )
             }
         }
         AddPlayerViewModel.State.LOADING -> {

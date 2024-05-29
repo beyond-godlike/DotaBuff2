@@ -10,9 +10,6 @@ import retrofit2.http.Query
 interface DotaBuffApi {
     @GET("players/{accountId}")
     suspend fun getPlayerInfo(@Path("accountId") accountId: String): Response<AccInformation>
-
-    // http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=1DBA7492F4696BDF9B428CAF6F56FB84&steamids=76561198178132453
-
     @GET("ISteamUser/GetPlayerSummaries/v0002/")
     suspend fun getPlayerState(
         @Query("key")key: String,
